@@ -1,8 +1,9 @@
 import React, {useCallback} from 'react';
-import {Badge, IconButton, Paper, Theme, Tooltip, Typography} from '@mui/material';
+import {Badge, IconButton, Paper, Slider, Theme, Tooltip, Typography} from '@mui/material';
 import CancelPresentationIcon from '@mui/icons-material/CancelPresentation';
 import PresentToAllIcon from '@mui/icons-material/PresentToAll';
 import FullScreenIcon from '@mui/icons-material/Fullscreen';
+import VolumeUpIcon from '@mui/icons-material/VolumeUp';
 import PeopleIcon from '@mui/icons-material/People';
 import SettingsIcon from '@mui/icons-material/Settings';
 import {useHotkeys} from 'react-hotkeys-hook';
@@ -70,6 +71,8 @@ export const Room = ({
     const [hoverControl, setHoverControl] = React.useState(false);
     const [selectedStream, setSelectedStream] = React.useState<string | typeof HostStream>();
     const [videoElement, setVideoElement] = React.useState<FullScreenHTMLVideoElement | null>(null);
+    const [selectedStreamVolume, setSelectedStreamVolume] = React.useState<number>(0.7);
+    const [volumeSliderShown, setVolumeSliderShown] = React.useState(false);
 
     useShowOnMouseMovement(setShowControl);
 
@@ -97,9 +100,20 @@ export const Room = ({
     React.useEffect(() => {
         if (videoElement && stream) {
             videoElement.srcObject = stream;
+            videoElement.volume = selectedStreamVolume;
             videoElement.play().catch((e) => console.log('Could not play main video', e));
         }
     }, [videoElement, stream]);
+
+    React.useEffect(() => {
+        if (videoElement) {
+            videoElement.volume = selectedStreamVolume;
+        }
+    }, [selectedStreamVolume]);
+
+    const handleVolumeChanged = (_: Event, newValue: number | number[]) => {
+        setSelectedStreamVolume((newValue as number) / 100);
+    };
 
     const copyLink = () => {
         navigator?.clipboard?.writeText(window.location.href)?.then(
@@ -194,7 +208,6 @@ export const Room = ({
 
             {stream ? (
                 <video
-                    muted
                     ref={setVideoElement}
                     className={videoClasses()}
                     onDoubleClick={handleFullscreen}
@@ -259,6 +272,32 @@ export const Room = ({
                         </IconButton>
                     </Tooltip>
 
+                    <Tooltip
+                        title={'Volume: ' + Math.round(selectedStreamVolume * 100) + '%'}
+                        arrow
+                    >
+                        <IconButton
+                            size="large"
+                            disableRipple={true}
+                            onMouseEnter={() => setVolumeSliderShown(true)}
+                            onMouseLeave={() => setVolumeSliderShown(false)}
+                            onDoubleClick={() => setSelectedStreamVolume(0)}
+                            sx={{width: 'auto'}}
+                        >
+                            <VolumeUpIcon fontSize="large" />
+                            <Slider
+                                sx={{
+                                    visibility: volumeSliderShown ? 'visible' : 'hidden',
+                                    width: volumeSliderShown ? 100 : 0,
+                                }}
+                                value={selectedStreamVolume * 100}
+                                onChange={handleVolumeChanged}
+                                min={0}
+                                max={100}
+                            />
+                        </IconButton>
+                    </Tooltip>
+
                     <Tooltip title="Settings" arrow>
                         <IconButton onClick={() => setOpen(true)} size="large">
                             <SettingsIcon fontSize="large" />
@@ -282,6 +321,7 @@ export const Room = ({
                                     key={client.id}
                                     src={client.stream}
                                     className={classes.smallVideo}
+                                    muted={true}
                                 />
                                 <Typography
                                     variant="subtitle1"
@@ -301,7 +341,7 @@ export const Room = ({
                         className={classes.smallVideoContainer}
                         onClick={() => setSelectedStream(HostStream)}
                     >
-                        <Video src={state.hostStream} className={classes.smallVideo} />
+                        <Video src={state.hostStream} className={classes.smallVideo} muted={true} />
                         <Typography
                             variant="subtitle1"
                             component="div"

@@ -1,6 +1,6 @@
 import React from 'react';
 
-export const Video = ({src, className}: {src: MediaStream; className?: string}) => {
+export const Video = ({src, className, muted}: {src: MediaStream; className?: string; muted: boolean}) => {
     const [element, setElement] = React.useState<HTMLVideoElement | null>(null);
 
     React.useEffect(() => {
@@ -10,5 +10,5 @@ export const Video = ({src, className}: {src: MediaStream; className?: string}) 
         }
     }, [element, src]);
 
-    return <video muted ref={setElement} className={className} />;
+    return <video muted={muted} ref={setElement} className={className}/>;
 };
